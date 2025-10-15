@@ -13,6 +13,7 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     password_hash = db.Column(db.String(128), nullable=False)
+    is_admin = db.Column(db.Boolean, nullable=False, default=False)
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -47,6 +48,14 @@ class Sale(db.Model):
     price = db.Column(db.Float, nullable=False)
     timestamp = db.Column(db.DateTime, server_default=db.func.now())
     product = db.relationship('Product')
+
+
+class UserPermission(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    page = db.Column(db.String(80), nullable=False)
+    allowed = db.Column(db.Boolean, nullable=False, default=False)
+    user = db.relationship('User', backref=db.backref('permissions', lazy='dynamic'))
 
 
 def create_app(test_config=None):
@@ -118,6 +127,21 @@ def create_app(test_config=None):
             if not session.get('user_id'):
                 flash('You must be logged in to access that page.')
                 return redirect(url_for('login'))
+            return fn(*args, **kwargs)
+
+        return wrapped
+
+    def admin_required(fn):
+        from functools import wraps
+
+        @wraps(fn)
+        def wrapped(*args, **kwargs):
+            if not session.get('user_id'):
+                flash('You must be logged in to access that page.')
+                return redirect(url_for('login'))
+            user = db.session.get(User, session.get('user_id'))
+            if not user or not getattr(user, 'is_admin', False):
+                abort(403)
             return fn(*args, **kwargs)
 
         return wrapped
@@ -273,6 +297,33 @@ def create_app(test_config=None):
     def purchases():
         items = Purchase.query.order_by(Purchase.timestamp.desc()).all()
         return render_template('purchases.html', purchases=items)
+
+    # Admin
+    @app.route('/admin')
+    @admin_required
+    def admin():
+        users = User.query.order_by(User.username).all()
+        pages = ['home', 'products', 'purchases', 'sales']
+        return render_template('admin.html', users=users, pages=pages)
+
+    @app.route('/admin/user/<int:user_id>/perm', methods=['POST'])
+    @admin_required
+    def admin_set_perm(user_id):
+        user = db.session.get(User, user_id)
+        if not user:
+            abort(404)
+        page = request.form.get('page')
+        allow = bool(request.form.get('allow'))
+
+        perm = UserPermission.query.filter_by(user_id=user.id, page=page).first()
+        if not perm:
+            perm = UserPermission(user_id=user.id, page=page, allowed=allow)
+            db.session.add(perm)
+        else:
+            perm.allowed = allow
+        db.session.commit()
+        flash('Permissions updated.')
+        return redirect(url_for('admin'))
 
     @app.route('/purchases/add', methods=['GET', 'POST'])
     @login_required

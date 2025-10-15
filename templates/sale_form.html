@@ -3,18 +3,22 @@
 {% block title %}Record Sale - Inventory System{% endblock %}
 
 {% block content %}
-  <h1>Record Sale</h1>
-  <form method="post">
-    <label>Product:
-      <select name="product_id">
-        {% for p in products %}
-          <option value="{{ p.id }}">{{ p.name }} (stock: {{ p.quantity }})</option>
-        {% endfor %}
-      </select>
-    </label><br />
-    <label>Quantity: <input name="quantity" value="1" /></label><br />
-    <label>Price: <input name="price" value="0.0" /></label><br />
-    <button type="submit">Save</button>
-  </form>
-  <p><a href="{{ url_for('sales') }}">Back to sales</a></p>
+  <div class="card">
+    <h1>Record Sale</h1>
+    <form method="post" style="display:flex; flex-direction:column; gap:8px;">
+      <label>Product:
+        <select name="product_id">
+          {% for p in products %}
+            <option value="{{ p.id }}">{{ p.name }} (stock: {{ p.quantity }})</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>Quantity: <input type="number" name="quantity" value="1" /></label>
+      <label>Price: <input type="number" step="0.01" name="price" value="0.0" /></label>
+      <div style="display:flex; gap:8px">
+        <button class="button" type="submit">Save</button>
+        <a class="button btn-ghost" href="{{ url_for('sales') }}">Back</a>
+      </div>
+    </form>
+  </div>
 {% endblock %}

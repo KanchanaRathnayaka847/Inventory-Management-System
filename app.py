@@ -1,7 +1,9 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, session
+from flask import Flask, render_template, request, redirect, url_for, flash, session, abort
 from flask import g
+from sqlalchemy import text
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
+from sqlalchemy import text
 import os
 
 db = SQLAlchemy()
@@ -32,6 +34,7 @@ class Purchase(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     product_id = db.Column(db.Integer, db.ForeignKey('product.id'), nullable=False)
     quantity = db.Column(db.Integer, nullable=False)
+    remaining = db.Column(db.Integer, nullable=False)
     price = db.Column(db.Float, nullable=False)
     timestamp = db.Column(db.DateTime, server_default=db.func.now())
     product = db.relationship('Product')
@@ -54,9 +57,12 @@ def create_app(test_config=None):
     app = Flask(__name__, template_folder='templates')
 
     # Default config
+    # Persist data to a single SQLite file named inventory.db in the project root
+    project_root = os.path.abspath(os.path.dirname(__file__))
+    db_path = os.path.join(project_root, 'inventory.db')
     app.config.from_mapping(
         SECRET_KEY=os.environ.get('FLASK_SECRET', 'dev-secret'),
-        SQLALCHEMY_DATABASE_URI='sqlite:///inventory.db',
+        SQLALCHEMY_DATABASE_URI=f"sqlite:///{db_path}",
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
     )
 
@@ -70,6 +76,25 @@ def create_app(test_config=None):
     with app.app_context():
         db.create_all()
 
+        # Try to ensure the 'remaining' column exists. If ALTER fails, fall back to safe mode.
+        try:
+            res = db.session.execute(text("PRAGMA table_info(purchase)")).fetchall()
+            cols = [r[1] for r in res]
+            if 'remaining' not in cols:
+                # Add the column
+                db.session.execute(text("ALTER TABLE purchase ADD COLUMN remaining INTEGER"))
+                db.session.commit()
+                # Initialize remaining = quantity for existing rows
+                db.session.execute(text("UPDATE purchase SET remaining = quantity"))
+                db.session.commit()
+                app.config['HAS_REMAINING'] = True
+            else:
+                app.config['HAS_REMAINING'] = True
+        except Exception as exc:
+            # If we can't add the column, log and continue in compatibility mode
+            print('Warning: could not ensure purchase.remaining column exists:', exc)
+            app.config['HAS_REMAINING'] = False
+
     # Load current user for requests and templates
     @app.before_request
     def load_current_user():
@@ -77,7 +102,7 @@ def create_app(test_config=None):
         g.current_user = None
         if user_id is not None:
             try:
-                g.current_user = User.query.get(user_id)
+                g.current_user = db.session.get(User, user_id)
             except Exception:
                 g.current_user = None
 
@@ -99,7 +124,20 @@ def create_app(test_config=None):
 
     @app.route('/')
     def home():
-        return render_template('home.html')
+        total_products = Product.query.count()
+
+        total_value = 0.0
+        if app.config.get('HAS_REMAINING'):
+            # Use remaining column
+            for purchase in Purchase.query.filter(Purchase.remaining > 0).all():
+                total_value += (purchase.remaining or 0) * (purchase.price or 0.0)
+        else:
+            # Fallback: use quantity as remaining (no per-batch tracking available)
+            rows = db.session.execute(text("SELECT quantity, price FROM purchase")).fetchall()
+            for qty, price in rows:
+                total_value += (qty or 0) * (price or 0.0)
+
+        return render_template('home.html', total_products=total_products, total_value=total_value)
 
     @app.route('/signup', methods=['GET', 'POST'])
     def signup():
@@ -185,7 +223,9 @@ def create_app(test_config=None):
     @app.route('/products/<int:product_id>/edit', methods=['GET', 'POST'])
     @login_required
     def edit_product(product_id):
-        p = Product.query.get_or_404(product_id)
+        p = db.session.get(Product, product_id)
+        if p is None:
+            abort(404)
         if request.method == 'POST':
             name = request.form.get('name', '').strip()
             category = request.form.get('category', '').strip()
@@ -220,7 +260,9 @@ def create_app(test_config=None):
     @app.route('/products/<int:product_id>/delete', methods=['POST'])
     @login_required
     def delete_product(product_id):
-        p = Product.query.get_or_404(product_id)
+        p = db.session.get(Product, product_id)
+        if p is None:
+            abort(404)
         db.session.delete(p)
         db.session.commit()
         flash('Product deleted.')
@@ -251,12 +293,22 @@ def create_app(test_config=None):
                 flash('Quantity must be positive.')
                 return redirect(url_for('add_purchase'))
 
-            product = Product.query.get_or_404(product_id)
-            purchase = Purchase(product_id=product.id, quantity=quantity, price=price)
+            product = db.session.get(Product, product_id)
+            if product is None:
+                abort(404)
+            if app.config.get('HAS_REMAINING'):
+                purchase = Purchase(product_id=product.id, quantity=quantity, remaining=quantity, price=price)
+                db.session.add(purchase)
+            else:
+                # Insert without remaining column using raw SQL
+                db.session.execute(
+                    text("INSERT INTO purchase (product_id, quantity, price, timestamp) VALUES (:pid, :qty, :price, CURRENT_TIMESTAMP)"),
+                    {"pid": product.id, "qty": quantity, "price": price},
+                )
+
             product.quantity = product.quantity + quantity
-            db.session.add(purchase)
             db.session.commit()
-            flash('Purchase recorded and stock updated.')
+            flash('Purchase recorded')
             return redirect(url_for('purchases'))
 
         return render_template('purchase_form.html', products=products)
@@ -286,16 +338,59 @@ def create_app(test_config=None):
                 flash('Quantity must be positive.')
                 return redirect(url_for('add_sale'))
 
-            product = Product.query.get_or_404(product_id)
+            product = db.session.get(Product, product_id)
+            if product is None:
+                abort(404)
             if quantity > product.quantity:
                 flash('Not enough stock for this sale.')
                 return redirect(url_for('add_sale'))
 
-            sale = Sale(product_id=product.id, quantity=quantity, price=price)
-            product.quantity = product.quantity - quantity
-            db.session.add(sale)
-            db.session.commit()
-            flash('Sale recorded and stock updated.')
+            if app.config.get('HAS_REMAINING'):
+                # Check total remaining across batches
+                total_remaining = db.session.query(db.func.coalesce(db.func.sum(Purchase.remaining), 0)).filter(Purchase.product_id == product.id).scalar() or 0
+                if total_remaining >= quantity:
+                    # Consume purchase batches FIFO
+                    remaining_to_consume = quantity
+                    with db.session.begin_nested():
+                        purchases = (
+                            Purchase.query.filter_by(product_id=product.id)
+                            .filter(Purchase.remaining > 0)
+                            .order_by(Purchase.timestamp.asc())
+                            .all()
+                        )
+                        for p_batch in purchases:
+                            if remaining_to_consume <= 0:
+                                break
+                            take = min(p_batch.remaining, remaining_to_consume)
+                            p_batch.remaining = p_batch.remaining - take
+                            remaining_to_consume -= take
+
+                        sale = Sale(product_id=product.id, quantity=quantity, price=price)
+                        db.session.add(sale)
+                        product.quantity = product.quantity - quantity
+                    db.session.commit()
+                    flash('Sale recorded')
+                else:
+                    # Not enough batch-tracked stock; fall back to using product.quantity if available
+                    if product.quantity >= quantity:
+                        # Record sale without consuming batches
+                        sale = Sale(product_id=product.id, quantity=quantity, price=price)
+                        db.session.add(sale)
+                        product.quantity = product.quantity - quantity
+                        db.session.commit()
+                        flash('Sale recorded')
+                    else:
+                        flash('Not enough stock for this sale.')
+                        return redirect(url_for('add_sale'))
+            else:
+                # Fallback: no batch tracking, just record sale and decrement product quantity
+                db.session.execute(
+                    text("INSERT INTO sale (product_id, quantity, price, timestamp) VALUES (:pid, :qty, :price, CURRENT_TIMESTAMP)"),
+                    {"pid": product.id, "qty": quantity, "price": price},
+                )
+                product.quantity = product.quantity - quantity
+                db.session.commit()
+                flash('Sale recorded')
             return redirect(url_for('sales'))
 
         return render_template('sale_form.html', products=products)

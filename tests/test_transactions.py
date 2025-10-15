@@ -37,7 +37,7 @@ def test_purchase_increases_stock(client):
     assert b'Purchase recorded' in resp.data
 
     with client.application.app_context():
-        p = Product.query.get(pid)
+        p = db.session.get(Product, pid)
         assert p.quantity == 15
 
 
@@ -54,12 +54,12 @@ def test_sale_decreases_stock_and_prevents_negative(client):
     resp = client.post('/sales/add', data={'product_id': str(pid), 'quantity': '2', 'price': '5.0'}, follow_redirects=True)
     assert b'Sale recorded' in resp.data
     with client.application.app_context():
-        p = Product.query.get(pid)
+        p = db.session.get(Product, pid)
         assert p.quantity == 1
 
     # attempt to sell 5 (more than stock)
     resp = client.post('/sales/add', data={'product_id': str(pid), 'quantity': '5', 'price': '5.0'}, follow_redirects=True)
     assert b'Not enough stock' in resp.data
     with client.application.app_context():
-        p = Product.query.get(pid)
+        p = db.session.get(Product, pid)
         assert p.quantity == 1

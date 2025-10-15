@@ -3,10 +3,13 @@
 {% block title %}Purchases - Inventory System{% endblock %}
 
 {% block content %}
-  <h1>Purchases</h1>
-  <p><a href="{{ url_for('add_purchase') }}">Record purchase</a></p>
-  {% if purchases %}
-    <table border="1" cellpadding="6">
+  <div class="card">
+    <div class="toolbar">
+      <h1 style="margin:0">Purchases</h1>
+      <div style="margin-left:auto"><a class="button" href="{{ url_for('add_purchase') }}">Record purchase</a></div>
+    </div>
+    {% if purchases %}
+      <table>
       <thead>
         <tr>
           <th>Product</th>
@@ -25,8 +28,9 @@
         </tr>
         {% endfor %}
       </tbody>
-    </table>
-  {% else %}
-    <p>No purchases recorded.</p>
-  {% endif %}
+      </table>
+    {% else %}
+      <p>No purchases recorded.</p>
+    {% endif %}
+  </div>
 {% endblock %}

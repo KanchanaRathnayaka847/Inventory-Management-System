@@ -146,6 +146,32 @@ def create_app(test_config=None):
 
         return wrapped
 
+    def page_permission_required(page_name):
+        from functools import wraps
+
+        def decorator(fn):
+            @wraps(fn)
+            def wrapped(*args, **kwargs):
+                user_id = session.get('user_id')
+                if not user_id:
+                    flash('You must be logged in to access that page.')
+                    return redirect(url_for('login'))
+                user = db.session.get(User, user_id)
+                if not user:
+                    abort(403)
+                # Admins bypass page permissions
+                if getattr(user, 'is_admin', False):
+                    return fn(*args, **kwargs)
+                perm = UserPermission.query.filter_by(user_id=user.id, page=page_name).first()
+                if perm and perm.allowed:
+                    return fn(*args, **kwargs)
+                flash('You do not have permission to access this page.')
+                return redirect(url_for('home'))
+
+            return wrapped
+
+        return decorator
+
     @app.route('/')
     def home():
         total_products = Product.query.count()
@@ -209,6 +235,7 @@ def create_app(test_config=None):
 
     # Product CRUD
     @app.route('/products')
+    @page_permission_required('products')
     def products():
         items = Product.query.order_by(Product.name).all()
         return render_template('products.html', products=items)
@@ -294,6 +321,7 @@ def create_app(test_config=None):
 
     # Purchases
     @app.route('/purchases')
+    @page_permission_required('purchases')
     def purchases():
         items = Purchase.query.order_by(Purchase.timestamp.desc()).all()
         return render_template('purchases.html', purchases=items)
@@ -304,7 +332,11 @@ def create_app(test_config=None):
     def admin():
         users = User.query.order_by(User.username).all()
         pages = ['home', 'products', 'purchases', 'sales']
-        return render_template('admin.html', users=users, pages=pages)
+        # Build permissions map for quick lookup
+        perms = {}
+        for u in users:
+            perms[u.id] = {p.page: p.allowed for p in u.permissions}
+        return render_template('admin.html', users=users, pages=pages, perms=perms)
 
     @app.route('/admin/user/<int:user_id>/perm', methods=['POST'])
     @admin_required
@@ -313,7 +345,16 @@ def create_app(test_config=None):
         if not user:
             abort(404)
         page = request.form.get('page')
-        allow = bool(request.form.get('allow'))
+        # Checkbox inputs: if 'allow' exists -> True, otherwise False
+        allow = True if request.form.get('allow') else False
+
+        # Special case: admin promotion toggle
+        if page == '__make_admin__':
+            # Toggle based on allow value: if allow true -> make admin, else revoke
+            user.is_admin = allow
+            db.session.commit()
+            flash('Admin status updated.')
+            return redirect(url_for('admin'))
 
         perm = UserPermission.query.filter_by(user_id=user.id, page=page).first()
         if not perm:
@@ -366,6 +407,7 @@ def create_app(test_config=None):
 
     # Sales
     @app.route('/sales')
+    @page_permission_required('sales')
     def sales():
         items = Sale.query.order_by(Sale.timestamp.desc()).all()
         return render_template('sales.html', sales=items)

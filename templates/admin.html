@@ -13,12 +13,19 @@
       {% for u in users %}
       <tr>
         <td>{{ u.username }}</td>
-        <td>{{ 'Yes' if u.is_admin else 'No' }}</td>
+        <td>
+          <form method="post" action="{{ url_for('admin_set_perm', user_id=u.id) }}" style="display:inline-block; margin-right:8px;">
+            <input type="hidden" name="page" value="__make_admin__">
+            <input type="hidden" name="allow" value="{{ 1 if not u.is_admin else 0 }}">
+            <button class="button" type="submit">{{ 'Revoke Admin' if u.is_admin else 'Make Admin' }}</button>
+          </form>
+        </td>
         <td>
           <form method="post" action="{{ url_for('admin_set_perm', user_id=u.id) }}">
             {% for p in pages %}
+              {% set checked = perms.get(u.id, {}).get(p, False) %}
               <label style="margin-right:8px">
-                <input type="checkbox" name="allow" value="1" {% if u.permissions.filter_by(page=p).first() and u.permissions.filter_by(page=p).first().allowed %}checked{% endif %}>
+                <input type="checkbox" name="allow" value="1" {% if checked %}checked{% endif %}>
                 {{ p }}
                 <input type="hidden" name="page" value="{{ p }}">
               </label>

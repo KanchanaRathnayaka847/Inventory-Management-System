@@ -278,6 +278,11 @@ def create_app(test_config=None):
         items = Purchase.query.order_by(Purchase.timestamp.desc()).all()
         return render_template('purchases.html', purchases=items)
 
+    @app.route('/master-data')
+    def master_data():
+        # Placeholder master data management page
+        return render_template('master_data.html')
+
     # Admin functionality removed
 
     @app.route('/purchases/add', methods=['GET', 'POST'])

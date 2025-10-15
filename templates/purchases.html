@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block title %}Purchases - Inventory System{% endblock %}
+
+{% block content %}
+  <h1>Purchases</h1>
+  <p><a href="{{ url_for('add_purchase') }}">Record purchase</a></p>
+  {% if purchases %}
+    <table border="1" cellpadding="6">
+      <thead>
+        <tr>
+          <th>Product</th>
+          <th>Quantity</th>
+          <th>Price</th>
+          <th>When</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in purchases %}
+        <tr>
+          <td>{{ p.product.name }}</td>
+          <td>{{ p.quantity }}</td>
+          <td>{{ '%.2f'|format(p.price) }}</td>
+          <td>{{ p.timestamp }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p>No purchases recorded.</p>
+  {% endif %}
+{% endblock %}

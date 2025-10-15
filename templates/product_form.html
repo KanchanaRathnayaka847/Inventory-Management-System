@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if product %}Edit{% else %}Add{% endif %} Product - Inventory System{% endblock %}
+
+{% block content %}
+  <h1>{% if product %}Edit{% else %}Add{% endif %} Product</h1>
+  <form method="post">
+    <label>Name: <input name="name" value="{{ product.name if product else '' }}"/></label><br />
+    <label>Category: <input name="category" value="{{ product.category if product else '' }}"/></label><br />
+    <label>Quantity: <input name="quantity" value="{{ product.quantity if product else 0 }}"/></label><br />
+    <label>Price: <input name="price" value="{{ product.price if product else 0.0 }}"/></label><br />
+    <label>Reorder Level: <input name="reorder_level" value="{{ product.reorder_level if product else 0 }}"/></label><br />
+    <button type="submit">Save</button>
+  </form>
+  <p><a href="{{ url_for('products') }}">Back to products</a></p>
+{% endblock %}

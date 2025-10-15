@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+
+{% block title %}Sign Up - Inventory System{% endblock %}
+
+{% block content %}
+  <h1>Sign Up</h1>
+  <form method="post">
+    <label>Username: <input name="username" /></label><br />
+    <label>Password: <input type="password" name="password" /></label><br />
+    <button type="submit">Sign Up</button>
+  </form>
+  <p><a href="{{ url_for('login') }}">Already have an account? Login</a></p>
+{% endblock %}

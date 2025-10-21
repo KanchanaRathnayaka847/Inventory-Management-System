@@ -5,6 +5,9 @@
 {% block content %}
 <div class="card">
   <h2>Master Data Management</h2>
-  <p>This page will be used to manage master data (categories, suppliers, etc.).</p>
+  <ul>
+    <li><a href="{{ url_for('categories') }}">Manage Product Categories</a></li>
+    <li><a href="{{ url_for('products') }}">Manage Products</a></li>
+  </ul>
 </div>
 {% endblock %}

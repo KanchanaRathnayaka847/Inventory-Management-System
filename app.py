@@ -25,9 +25,18 @@ class Product(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(120), nullable=False)
     category = db.Column(db.String(80), nullable=True)
+    # Optional FK to normalized category table (back-compat: keep string field too)
+    category_id = db.Column(db.Integer, db.ForeignKey('product_category.id'), nullable=True)
     quantity = db.Column(db.Integer, nullable=False, default=0)
     price = db.Column(db.Float, nullable=False, default=0.0)
     reorder_level = db.Column(db.Integer, nullable=False, default=0)
+    category_rel = db.relationship('ProductCategory', lazy='joined')
+
+
+class ProductCategory(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(120), unique=True, nullable=False)
+    description = db.Column(db.String(255), nullable=True)
 
 
 class Purchase(db.Model):
@@ -96,6 +105,16 @@ def create_app(test_config=None):
             # If we can't add the column, log and continue in compatibility mode
             print('Warning: could not ensure purchase.remaining column exists:', exc)
             app.config['HAS_REMAINING'] = False
+
+        # Ensure product.category_id exists for category mapping
+        try:
+            res = db.session.execute(text("PRAGMA table_info(product)")).fetchall()
+            pcols = [r[1] for r in res]
+            if 'category_id' not in pcols:
+                db.session.execute(text("ALTER TABLE product ADD COLUMN category_id INTEGER"))
+                db.session.commit()
+        except Exception as exc:
+            print('Warning: could not ensure product.category_id column exists:', exc)
 
     # Load current user for requests and templates
     @app.before_request
@@ -199,9 +218,14 @@ def create_app(test_config=None):
     @app.route('/products/add', methods=['GET', 'POST'])
     @login_required
     def add_product():
+        categories = ProductCategory.query.order_by(ProductCategory.name).all()
         if request.method == 'POST':
             name = request.form.get('name', '').strip()
             category = request.form.get('category', '').strip()
+            try:
+                category_id = int(request.form.get('category_id')) if request.form.get('category_id') else None
+            except ValueError:
+                category_id = None
             try:
                 quantity = int(request.form.get('quantity', '0'))
             except ValueError:
@@ -219,13 +243,13 @@ def create_app(test_config=None):
                 flash('Product name is required.')
                 return redirect(url_for('add_product'))
 
-            p = Product(name=name, category=category, quantity=quantity, price=price, reorder_level=reorder_level)
+            p = Product(name=name, category=category, category_id=category_id, quantity=quantity, price=price, reorder_level=reorder_level)
             db.session.add(p)
             db.session.commit()
             flash('Product added.')
             return redirect(url_for('products'))
 
-        return render_template('product_form.html', product=None)
+        return render_template('product_form.html', product=None, categories=categories)
 
     @app.route('/products/<int:product_id>/edit', methods=['GET', 'POST'])
     @login_required
@@ -233,9 +257,14 @@ def create_app(test_config=None):
         p = db.session.get(Product, product_id)
         if p is None:
             abort(404)
+        categories = ProductCategory.query.order_by(ProductCategory.name).all()
         if request.method == 'POST':
             name = request.form.get('name', '').strip()
             category = request.form.get('category', '').strip()
+            try:
+                category_id = int(request.form.get('category_id')) if request.form.get('category_id') else None
+            except ValueError:
+                category_id = p.category_id
             try:
                 quantity = int(request.form.get('quantity', '0'))
             except ValueError:
@@ -255,6 +284,7 @@ def create_app(test_config=None):
 
             p.name = name
             p.category = category
+            p.category_id = category_id
             p.quantity = quantity
             p.price = price
             p.reorder_level = reorder_level
@@ -262,7 +292,73 @@ def create_app(test_config=None):
             flash('Product updated.')
             return redirect(url_for('products'))
 
-        return render_template('product_form.html', product=p)
+        return render_template('product_form.html', product=p, categories=categories)
+
+    # Categories (Master Data)
+    @app.route('/categories')
+    @login_required
+    def categories():
+        items = ProductCategory.query.order_by(ProductCategory.name).all()
+        return render_template('categories.html', categories=items)
+
+    @app.route('/categories/add', methods=['GET', 'POST'])
+    @login_required
+    def add_category():
+        if request.method == 'POST':
+            name = request.form.get('name', '').strip()
+            description = request.form.get('description', '').strip()
+            if not name:
+                flash('Category name is required.')
+                return redirect(url_for('add_category'))
+            if ProductCategory.query.filter_by(name=name).first():
+                flash('Category name already exists.')
+                return redirect(url_for('add_category'))
+            c = ProductCategory(name=name, description=description)
+            db.session.add(c)
+            db.session.commit()
+            flash('Category added.')
+            return redirect(url_for('categories'))
+        return render_template('category_form.html', category=None)
+
+    @app.route('/categories/<int:category_id>/edit', methods=['GET', 'POST'])
+    @login_required
+    def edit_category(category_id):
+        c = db.session.get(ProductCategory, category_id)
+        if c is None:
+            abort(404)
+        if request.method == 'POST':
+            name = request.form.get('name', '').strip()
+            description = request.form.get('description', '').strip()
+            if not name:
+                flash('Category name is required.')
+                return redirect(url_for('edit_category', category_id=category_id))
+            # Ensure unique name (exclude self)
+            exists = ProductCategory.query.filter(ProductCategory.name == name, ProductCategory.id != c.id).first()
+            if exists:
+                flash('Another category with that name already exists.')
+                return redirect(url_for('edit_category', category_id=category_id))
+            c.name = name
+            c.description = description
+            db.session.commit()
+            flash('Category updated.')
+            return redirect(url_for('categories'))
+        return render_template('category_form.html', category=c)
+
+    @app.route('/categories/<int:category_id>/delete', methods=['POST'])
+    @login_required
+    def delete_category(category_id):
+        c = db.session.get(ProductCategory, category_id)
+        if c is None:
+            abort(404)
+        # Prevent delete if products map to this category
+        in_use = Product.query.filter_by(category_id=c.id).first()
+        if in_use:
+            flash('Cannot delete category: products are assigned to it.')
+            return redirect(url_for('categories'))
+        db.session.delete(c)
+        db.session.commit()
+        flash('Category deleted.')
+        return redirect(url_for('categories'))
 
     @app.route('/products/<int:product_id>/delete', methods=['POST'])
     @login_required

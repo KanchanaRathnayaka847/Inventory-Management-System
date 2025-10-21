@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if category %}Edit{% else %}Add{% endif %} Category - Inventory System{% endblock %}
+
+{% block content %}
+  <div class="card">
+    <h1>{% if category %}Edit{% else %}Add{% endif %} Category</h1>
+    <form method="post" style="display:flex; flex-direction:column; gap:10px; max-width:500px;">
+      <label>Name: <input name="name" value="{{ category.name if category else '' }}"/></label>
+      <label>Description: <input name="description" value="{{ category.description if category else '' }}"/></label>
+      <div style="display:flex; gap:8px;">
+        <button class="button" type="submit">Save</button>
+        <a class="button btn-ghost" href="{{ url_for('categories') }}">Back</a>
+      </div>
+    </form>
+  </div>
+{% endblock %}

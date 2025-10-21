@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block title %}Categories - Inventory System{% endblock %}
+
+{% block content %}
+  <div class="card">
+    <div class="toolbar">
+      <h1 style="margin:0">Product Categories</h1>
+      <div style="margin-left:auto"><a class="button" href="{{ url_for('add_category') }}">Add category</a></div>
+    </div>
+    {% if categories %}
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Description</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in categories %}
+            <tr>
+              <td>{{ c.name }}</td>
+              <td>{{ c.description or '' }}</td>
+              <td>
+                <a class="button" href="{{ url_for('edit_category', category_id=c.id) }}">Edit</a>
+                <form method="post" action="{{ url_for('delete_category', category_id=c.id) }}" style="display:inline">
+                  <button class="button btn-ghost" type="submit">Delete</button>
+                </form>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p>No categories yet.</p>
+    {% endif %}
+  </div>
+{% endblock %}

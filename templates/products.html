@@ -24,7 +24,7 @@
         {% for p in products %}
         <tr>
           <td>{{ p.name }}</td>
-          <td>{{ p.category }}</td>
+          <td>{{ p.category_rel.name if p.category_rel else p.category }}</td>
             <td>
               {{ p.quantity }}
               {% if p.quantity < p.reorder_level %}

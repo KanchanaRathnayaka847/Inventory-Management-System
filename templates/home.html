@@ -24,7 +24,7 @@
         </thead>
         <tbody>
           {% for p in products %}
-            <tr class="{% if p.quantity is not none and p.reorder_level is not none and p.quantity < p.reorder_level %}row-low{% endif %}">
+            <tr class="{% if (p.quantity or 0) > (p.reorder_level or 0) %}row-ok{% elif (p.reorder_level or 0) > 0 and (p.quantity or 0) < (p.reorder_level or 0) %}row-low{% endif %}">
               <td>{{ p.code or ('P' ~ p.id) }}</td>
               <td>{{ p.name }}</td>
               <td>{{ p.category_rel.name if p.category_rel else p.category }}</td>

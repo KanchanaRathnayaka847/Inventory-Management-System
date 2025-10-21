@@ -33,9 +33,9 @@
               <td>{{ p.quantity }}</td>
               <td>
                 {% if (p.quantity or 0) == 0 %}
-                  <span class="warning">Out of stock</span>
+                  <span class="badge badge-danger">Out of stock</span>
                 {% elif (p.reorder_level or 0) > 0 and (p.quantity or 0) < (p.reorder_level or 0) %}
-                  <span class="warning">Below the reorder level</span>
+                  <span class="badge badge-warning">Below the reorder level</span>
                 {% else %}
                   
                 {% endif %}

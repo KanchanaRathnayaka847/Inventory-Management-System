@@ -536,6 +536,89 @@ def create_app(test_config=None):
 
         return render_template('sale_form.html', products=products)
 
+    # Product Master (minimal fields only)
+    @app.route('/product-master')
+    @login_required
+    def product_master():
+        items = Product.query.order_by(Product.name.asc()).all()
+        return render_template('product_master.html', products=items)
+
+    @app.route('/product-master/add', methods=['GET', 'POST'])
+    @login_required
+    def add_product_master():
+        categories = ProductCategory.query.order_by(ProductCategory.name).all()
+        if request.method == 'POST':
+            name = request.form.get('name', '').strip()
+            try:
+                category_id = int(request.form.get('category_id')) if request.form.get('category_id') else None
+            except ValueError:
+                category_id = None
+            unit = request.form.get('unit', '').strip() or None
+
+            if not name:
+                flash('Product name is required.')
+                return redirect(url_for('add_product_master'))
+
+            # Auto-generate code similar to /products/add
+            existing_codes = [row[0] for row in db.session.query(Product.code).filter(Product.code.isnot(None)).all()]
+            numeric_vals = []
+            for c in existing_codes:
+                try:
+                    if c and c.startswith('P') and c[1:].isdigit():
+                        numeric_vals.append(int(c[1:]))
+                except Exception:
+                    continue
+            next_num = (max(numeric_vals) + 1) if numeric_vals else 1
+            code_val = f"P{next_num:02d}" if next_num < 100 else f"P{next_num}"
+            while db.session.query(Product.id).filter_by(code=code_val).first() is not None:
+                next_num += 1
+                code_val = f"P{next_num:02d}" if next_num < 100 else f"P{next_num}"
+
+            # Set legacy text category to keep compatible (optional)
+            legacy_cat = None
+            if category_id:
+                cat = db.session.get(ProductCategory, category_id)
+                legacy_cat = cat.name if cat else None
+
+            p = Product(code=code_val, name=name, category_id=category_id, category=legacy_cat, unit=unit)
+            db.session.add(p)
+            db.session.commit()
+            flash('Product saved to master.')
+            return redirect(url_for('product_master'))
+        return render_template('product_master_form.html', product=None, categories=categories)
+
+    @app.route('/product-master/<int:product_id>/edit', methods=['GET', 'POST'])
+    @login_required
+    def edit_product_master(product_id):
+        p = db.session.get(Product, product_id)
+        if p is None:
+            abort(404)
+        categories = ProductCategory.query.order_by(ProductCategory.name).all()
+        if request.method == 'POST':
+            name = request.form.get('name', '').strip()
+            try:
+                category_id = int(request.form.get('category_id')) if request.form.get('category_id') else None
+            except ValueError:
+                category_id = p.category_id
+            unit = request.form.get('unit', '').strip() or p.unit
+            if not name:
+                flash('Product name is required.')
+                return redirect(url_for('edit_product_master', product_id=product_id))
+
+            legacy_cat = None
+            if category_id:
+                cat = db.session.get(ProductCategory, category_id)
+                legacy_cat = cat.name if cat else None
+
+            p.name = name
+            p.category_id = category_id
+            p.category = legacy_cat
+            p.unit = unit
+            db.session.commit()
+            flash('Product updated in master.')
+            return redirect(url_for('product_master'))
+        return render_template('product_master_form.html', product=p, categories=categories)
+
     return app
 
 

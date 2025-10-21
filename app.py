@@ -659,6 +659,21 @@ def create_app(test_config=None):
             profit_loss=profit_loss,
         )
 
+    @app.route('/reports/sales')
+    @login_required
+    def reports_sales():
+        return render_template('report_sales.html')
+
+    @app.route('/reports/purchases')
+    @login_required
+    def reports_purchases():
+        return render_template('report_purchases.html')
+
+    @app.route('/reports/profit-loss')
+    @login_required
+    def reports_profit_loss():
+        return render_template('report_profit_loss.html')
+
     return app
 
 

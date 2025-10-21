@@ -10,28 +10,20 @@
   <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap:16px;">
     <div class="card">
       <h2 style="margin-top:0">Sales Data</h2>
-      <p>Total sales transactions: <strong>{{ total_sales_txns }}</strong></p>
-      <p>Total sales quantity: <strong>{{ total_sales_qty }}</strong></p>
-      <p>Total sales amount: <strong>{{ '%.2f'|format(total_sales_amount) }}</strong></p>
-      <div style="margin-top:12px;"><a class="button btn-ghost" href="#">View details</a></div>
+      <p style="color:#666; margin-top:4px;">Explore detailed sales dashboards and reports.</p>
+      <div style="margin-top:12px;"><a class="button" href="{{ url_for('reports_sales') }}">Open sales dashboard</a></div>
     </div>
 
     <div class="card">
       <h2 style="margin-top:0">Purchase Data</h2>
-      <p>Total purchase transactions: <strong>{{ total_purchase_txns }}</strong></p>
-      <p>Total purchase quantity: <strong>{{ total_purchase_qty }}</strong></p>
-      <p>Total purchase cost: <strong>{{ '%.2f'|format(total_purchase_cost) }}</strong></p>
-      <div style="margin-top:12px;"><a class="button btn-ghost" href="#">View details</a></div>
+      <p style="color:#666; margin-top:4px;">Explore detailed purchase dashboards and reports.</p>
+      <div style="margin-top:12px;"><a class="button" href="{{ url_for('reports_purchases') }}">Open purchase dashboard</a></div>
     </div>
 
     <div class="card">
       <h2 style="margin-top:0">Profit / Loss</h2>
-      {% set pl = profit_loss or 0.0 %}
-      <p>Gross P/L (Sales - Purchases):
-        <strong class="{{ 'text-success' if pl >= 0 else 'text-danger' }}">{{ '%.2f'|format(pl) }}</strong>
-      </p>
-      <small style="color:#666;">Note: Simple calculation based on total sold vs. total purchased amounts.</small>
-      <div style="margin-top:12px;"><a class="button btn-ghost" href="#">View details</a></div>
+      <p style="color:#666; margin-top:4px;">Explore gross and net P/L dashboards and trends.</p>
+      <div style="margin-top:12px;"><a class="button" href="{{ url_for('reports_profit_loss') }}">Open P/L dashboard</a></div>
     </div>
   </div>
 {% endblock %}

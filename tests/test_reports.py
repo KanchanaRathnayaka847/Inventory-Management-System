@@ -36,3 +36,20 @@ def test_reports_page_renders_after_login(client):
     assert b'Sales Data' in rv.data
     assert b'Purchase Data' in rv.data
     assert b'Profit / Loss' in rv.data
+
+
+def test_reports_subpages_render_after_login(client):
+    client.post('/signup', data={'username': 'u2', 'password': 'pw'}, follow_redirects=True)
+    client.post('/login', data={'username': 'u2', 'password': 'pw'}, follow_redirects=True)
+
+    r1 = client.get('/reports/sales')
+    assert r1.status_code == 200
+    assert b'Sales Dashboard' in r1.data
+
+    r2 = client.get('/reports/purchases')
+    assert r2.status_code == 200
+    assert b'Purchase Dashboard' in r2.data
+
+    r3 = client.get('/reports/profit-loss')
+    assert r3.status_code == 200
+    assert b'Profit / Loss Dashboard' in r3.data

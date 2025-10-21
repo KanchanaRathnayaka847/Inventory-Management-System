@@ -15,6 +15,18 @@
           {% endfor %}
         </select>
       </label>
+      <label>Unit of Measurement:
+        <select name="unit">
+          {% set units = ['pcs','box','pack','set','kg','g','lb','l','ml','m','cm','inch'] %}
+          <option value="">-- Select Unit --</option>
+          {% for u in units %}
+            <option value="{{ u }}" {% if product and product.unit == u %}selected{% endif %}>{{ u }}</option>
+          {% endfor %}
+          {% if product and product.unit and product.unit not in units %}
+            <option value="{{ product.unit }}" selected>{{ product.unit }}</option>
+          {% endif %}
+        </select>
+      </label>
       <div style="display:flex; gap:8px;">
         <button class="button" type="submit">Save</button>
         <a class="button btn-ghost" href="{{ url_for('products') }}">Back</a>

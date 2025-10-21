@@ -27,6 +27,7 @@ class Product(db.Model):
     category = db.Column(db.String(80), nullable=True)
     # Optional FK to normalized category table (back-compat: keep string field too)
     category_id = db.Column(db.Integer, db.ForeignKey('product_category.id'), nullable=True)
+    unit = db.Column(db.String(30), nullable=True)
     quantity = db.Column(db.Integer, nullable=False, default=0)
     price = db.Column(db.Float, nullable=False, default=0.0)
     reorder_level = db.Column(db.Integer, nullable=False, default=0)
@@ -112,6 +113,9 @@ def create_app(test_config=None):
             pcols = [r[1] for r in res]
             if 'category_id' not in pcols:
                 db.session.execute(text("ALTER TABLE product ADD COLUMN category_id INTEGER"))
+                db.session.commit()
+            if 'unit' not in pcols:
+                db.session.execute(text("ALTER TABLE product ADD COLUMN unit VARCHAR(30)"))
                 db.session.commit()
         except Exception as exc:
             print('Warning: could not ensure product.category_id column exists:', exc)
@@ -226,6 +230,7 @@ def create_app(test_config=None):
                 category_id = int(request.form.get('category_id')) if request.form.get('category_id') else None
             except ValueError:
                 category_id = None
+            unit = request.form.get('unit', '').strip() or None
             try:
                 quantity = int(request.form.get('quantity', '0'))
             except ValueError:
@@ -243,7 +248,7 @@ def create_app(test_config=None):
                 flash('Product name is required.')
                 return redirect(url_for('add_product'))
 
-            p = Product(name=name, category=category, category_id=category_id, quantity=quantity, price=price, reorder_level=reorder_level)
+            p = Product(name=name, category=category, category_id=category_id, unit=unit, quantity=quantity, price=price, reorder_level=reorder_level)
             db.session.add(p)
             db.session.commit()
             flash('Product added.')
@@ -265,6 +270,7 @@ def create_app(test_config=None):
                 category_id = int(request.form.get('category_id')) if request.form.get('category_id') else None
             except ValueError:
                 category_id = p.category_id
+            unit = request.form.get('unit', '').strip() or p.unit
             try:
                 quantity = int(request.form.get('quantity', '0'))
             except ValueError:
@@ -285,6 +291,7 @@ def create_app(test_config=None):
             p.name = name
             p.category = category
             p.category_id = category_id
+            p.unit = unit
             p.quantity = quantity
             p.price = price
             p.reorder_level = reorder_level

@@ -24,7 +24,7 @@
             <tr>
               <td>{{ p.id }}</td>
               <td>{{ p.name }}</td>
-              <td>pcs</td>
+              <td>{{ p.unit or 'pcs' }}</td>
               <td>{{ p.quantity }}</td>
             </tr>
           {% else %}

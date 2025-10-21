@@ -14,6 +14,7 @@
         <tr>
           <th>Name</th>
           <th>Category</th>
+          <th>Unit</th>
           <th>Quantity</th>
           <th>Price</th>
           <th>Reorder Level</th>
@@ -25,6 +26,7 @@
         <tr>
           <td>{{ p.name }}</td>
           <td>{{ p.category_rel.name if p.category_rel else p.category }}</td>
+          <td>{{ p.unit or '' }}</td>
             <td>
               {{ p.quantity }}
               {% if p.quantity < p.reorder_level %}

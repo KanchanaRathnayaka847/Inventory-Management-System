@@ -1,6 +1,9 @@
 {% extends 'base.html' %}
 {% block title %}Profit / Loss Dashboard{% endblock %}
 {% block content %}
-<div class="toolbar"><h1 style="margin:0">Profit / Loss Dashboard</h1></div>
+<div class="toolbar">
+	<h1 style="margin:0">Profit / Loss Dashboard</h1>
+	<div style="margin-left:auto"><a class="button btn-ghost" href="{{ url_for('reports') }}">Back</a></div>
+</div>
 <p style="color:#666;">Coming soon: gross vs net P/L, period comparisons, and category contributions.</p>
 {% endblock %}

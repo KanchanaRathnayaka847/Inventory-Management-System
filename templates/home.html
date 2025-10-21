@@ -15,20 +15,34 @@
           <tr>
             <th>Product ID</th>
             <th>Name</th>
+            <th>Category</th>
             <th>Unit</th>
+            <th>Reorder Level</th>
             <th>Available Qty</th>
+            <th>Status</th>
           </tr>
         </thead>
         <tbody>
           {% for p in products %}
-            <tr>
+            <tr class="{% if p.quantity is not none and p.reorder_level is not none and p.quantity < p.reorder_level %}row-low{% endif %}">
               <td>{{ p.code or ('P' ~ p.id) }}</td>
               <td>{{ p.name }}</td>
+              <td>{{ p.category_rel.name if p.category_rel else p.category }}</td>
               <td>{{ p.unit or 'pcs' }}</td>
+              <td>{{ p.reorder_level or 0 }}</td>
               <td>{{ p.quantity }}</td>
+              <td>
+                {% if (p.quantity or 0) == 0 %}
+                  <span class="warning">Out of stock</span>
+                {% elif (p.reorder_level or 0) > 0 and (p.quantity or 0) < (p.reorder_level or 0) %}
+                  <span class="warning">Below the reorder level</span>
+                {% else %}
+                  
+                {% endif %}
+              </td>
             </tr>
           {% else %}
-            <tr><td colspan="4" style="text-align:center; color:#666;">No products yet.</td></tr>
+            <tr><td colspan="7" style="text-align:center; color:#666;">No products yet.</td></tr>
           {% endfor %}
         </tbody>
       </table>

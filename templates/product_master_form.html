@@ -27,6 +27,7 @@
           {% endif %}
         </select>
       </label>
+      <label>Reorder Level: <input type="number" name="reorder_level" value="{{ product.reorder_level if product else 0 }}"/></label>
       <div style="display:flex; gap:8px;">
         <button class="button" type="submit">Save</button>
         <a class="button btn-ghost" href="{{ url_for('product_master') }}">Back</a>

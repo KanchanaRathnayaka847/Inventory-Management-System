@@ -554,6 +554,10 @@ def create_app(test_config=None):
             except ValueError:
                 category_id = None
             unit = request.form.get('unit', '').strip() or None
+            try:
+                reorder_level = int(request.form.get('reorder_level', '0'))
+            except ValueError:
+                reorder_level = 0
 
             if not name:
                 flash('Product name is required.')
@@ -580,7 +584,7 @@ def create_app(test_config=None):
                 cat = db.session.get(ProductCategory, category_id)
                 legacy_cat = cat.name if cat else None
 
-            p = Product(code=code_val, name=name, category_id=category_id, category=legacy_cat, unit=unit)
+            p = Product(code=code_val, name=name, category_id=category_id, category=legacy_cat, unit=unit, reorder_level=reorder_level)
             db.session.add(p)
             db.session.commit()
             flash('Product saved to master.')
@@ -601,6 +605,10 @@ def create_app(test_config=None):
             except ValueError:
                 category_id = p.category_id
             unit = request.form.get('unit', '').strip() or p.unit
+            try:
+                reorder_level = int(request.form.get('reorder_level', str(p.reorder_level or 0)))
+            except ValueError:
+                reorder_level = p.reorder_level
             if not name:
                 flash('Product name is required.')
                 return redirect(url_for('edit_product_master', product_id=product_id))
@@ -614,6 +622,7 @@ def create_app(test_config=None):
             p.category_id = category_id
             p.category = legacy_cat
             p.unit = unit
+            p.reorder_level = reorder_level
             db.session.commit()
             flash('Product updated in master.')
             return redirect(url_for('product_master'))

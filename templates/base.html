@@ -40,6 +40,10 @@
       .warning { color: #8b1e1e; background: #fff2f2; padding:6px 8px; border-radius:6px; display:inline-block; }
       .reorder { color: #ff3b30; font-weight:600; }
 
+  /* Centering helper for forms or content blocks */
+  .center-wrap{ min-height: calc(100vh - 120px); display:flex; align-items:center; justify-content:center; }
+  @media (max-width: 768px){ .center-wrap{ min-height: auto; display:block; } }
+
       @media (max-width:700px){
         header .container{ flex-direction:column; align-items:flex-start; gap:8px; }
         main{ padding:12px; }
@@ -61,17 +65,19 @@
     </header>
 
     <div class="layout">
-      <aside class="sidebar">
-        <nav>
-          <a href="{{ url_for('home') }}">Home</a>
-          <a href="{{ url_for('products') }}">Products</a>
-          <a href="{{ url_for('purchases') }}">Purchases</a>
-          <a href="{{ url_for('sales') }}">Sales</a>
-          <a href="{{ url_for('master_data') }}">Master Data Management</a>
-        </nav>
-      </aside>
+      {% if current_user %}
+        <aside class="sidebar">
+          <nav>
+            <a href="{{ url_for('home') }}">Home</a>
+            <a href="{{ url_for('products') }}">Products</a>
+            <a href="{{ url_for('purchases') }}">Purchases</a>
+            <a href="{{ url_for('sales') }}">Sales</a>
+            <a href="{{ url_for('master_data') }}">Master Data Management</a>
+          </nav>
+        </aside>
+      {% endif %}
 
-      <main>
+  <main {% if not current_user %}style="margin-left:0;padding-top:92px;"{% endif %}>
       {% with messages = get_flashed_messages() %}
         {% if messages %}
           <ul>

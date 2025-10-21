@@ -3,7 +3,7 @@
 {% block title %}Home - Inventory System{% endblock %}
 
 {% block content %}
-  <h1>Inventory System Home Page</h1>
+  <h1>ABC Company</h1>
   <p>Total products: {{ total_products }}</p>
   <p>Total stock value (FIFO): {{ '%.2f'|format(total_value) }}</p>
   <div class="card">
@@ -17,4 +17,50 @@
     <p>Total products: <strong>{{ total_products }}</strong></p>
     <p>Total stock value (FIFO): <strong>{{ '%.2f'|format(total_value) }}</strong></p>
   </div>
+  <div class="card">
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+      <h2 style="margin:0;">Products</h2>
+      <input id="productSearch" type="text" placeholder="Search products..." style="max-width:260px;" />
+    </div>
+    <div style="overflow:auto; margin-top:12px;">
+      <table id="productsTable" style="width:100%;">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Unit</th>
+            <th>Available Qty</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in products %}
+            <tr>
+              <td>{{ p.id }}</td>
+              <td>{{ p.name }}</td>
+              <td>pcs</td>
+              <td>{{ p.quantity }}</td>
+            </tr>
+          {% else %}
+            <tr><td colspan="4" style="text-align:center; color:#666;">No products yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    (function(){
+      const input = document.getElementById('productSearch');
+      const table = document.getElementById('productsTable');
+      if(!input || !table) return;
+      input.addEventListener('input', function(){
+        const q = this.value.trim().toLowerCase();
+        const rows = table.querySelectorAll('tbody tr');
+        rows.forEach(row => {
+          const text = row.innerText.toLowerCase();
+          row.style.display = text.includes(q) ? '' : 'none';
+        });
+      });
+    })();
+  </script>
 {% endblock %}

@@ -127,6 +127,7 @@ def create_app(test_config=None):
     # No admin or page-permission decorators (removed)
 
     @app.route('/')
+    @login_required
     def home():
         total_products = Product.query.count()
 
@@ -141,7 +142,9 @@ def create_app(test_config=None):
             for qty, price in rows:
                 total_value += (qty or 0) * (price or 0.0)
 
-        return render_template('home.html', total_products=total_products, total_value=total_value)
+        # Fetch products for dashboard table
+        items = Product.query.order_by(Product.id).all()
+        return render_template('home.html', total_products=total_products, total_value=total_value, products=items)
 
     @app.route('/signup', methods=['GET', 'POST'])
     def signup():
@@ -189,6 +192,7 @@ def create_app(test_config=None):
 
     # Product CRUD
     @app.route('/products')
+    @login_required
     def products():
         items = Product.query.order_by(Product.name).all()
         return render_template('products.html', products=items)
@@ -274,11 +278,13 @@ def create_app(test_config=None):
 
     # Purchases
     @app.route('/purchases')
+    @login_required
     def purchases():
         items = Purchase.query.order_by(Purchase.timestamp.desc()).all()
         return render_template('purchases.html', purchases=items)
 
     @app.route('/master-data')
+    @login_required
     def master_data():
         # Placeholder master data management page
         return render_template('master_data.html')
@@ -326,6 +332,7 @@ def create_app(test_config=None):
 
     # Sales
     @app.route('/sales')
+    @login_required
     def sales():
         items = Sale.query.order_by(Sale.timestamp.desc()).all()
         return render_template('sales.html', sales=items)

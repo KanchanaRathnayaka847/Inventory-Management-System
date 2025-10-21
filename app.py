@@ -628,6 +628,37 @@ def create_app(test_config=None):
             return redirect(url_for('product_master'))
         return render_template('product_master_form.html', product=p, categories=categories)
 
+    # Reports & Dashboard
+    @app.route('/reports')
+    @login_required
+    def reports():
+        # Sales summaries
+        total_sales_txns = db.session.query(db.func.count(Sale.id)).scalar() or 0
+        total_sales_qty = db.session.query(db.func.coalesce(db.func.sum(Sale.quantity), 0)).scalar() or 0
+        total_sales_amount = db.session.query(
+            db.func.coalesce(db.func.sum(Sale.quantity * Sale.price), 0.0)
+        ).scalar() or 0.0
+
+        # Purchase summaries
+        total_purchase_txns = db.session.query(db.func.count(Purchase.id)).scalar() or 0
+        total_purchase_qty = db.session.query(db.func.coalesce(db.func.sum(Purchase.quantity), 0)).scalar() or 0
+        total_purchase_cost = db.session.query(
+            db.func.coalesce(db.func.sum(Purchase.quantity * Purchase.price), 0.0)
+        ).scalar() or 0.0
+
+        profit_loss = (total_sales_amount or 0.0) - (total_purchase_cost or 0.0)
+
+        return render_template(
+            'reports.html',
+            total_sales_txns=total_sales_txns,
+            total_sales_qty=total_sales_qty,
+            total_sales_amount=total_sales_amount,
+            total_purchase_txns=total_purchase_txns,
+            total_purchase_qty=total_purchase_qty,
+            total_purchase_cost=total_purchase_cost,
+            profit_loss=profit_loss,
+        )
+
     return app
 
 

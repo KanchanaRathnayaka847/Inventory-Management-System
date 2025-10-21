@@ -13,7 +13,7 @@
       <table id="productsTable" style="width:100%;">
         <thead>
           <tr>
-            <th>ID</th>
+            <th>Product ID</th>
             <th>Name</th>
             <th>Unit</th>
             <th>Available Qty</th>
@@ -22,7 +22,7 @@
         <tbody>
           {% for p in products %}
             <tr>
-              <td>{{ p.id }}</td>
+              <td>{{ p.code or ('P' ~ p.id) }}</td>
               <td>{{ p.name }}</td>
               <td>{{ p.unit or 'pcs' }}</td>
               <td>{{ p.quantity }}</td>

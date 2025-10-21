@@ -23,6 +23,7 @@ class User(db.Model):
 
 class Product(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    code = db.Column(db.String(20), unique=True, index=True)
     name = db.Column(db.String(120), nullable=False)
     category = db.Column(db.String(80), nullable=True)
     # Optional FK to normalized category table (back-compat: keep string field too)
@@ -107,7 +108,7 @@ def create_app(test_config=None):
             print('Warning: could not ensure purchase.remaining column exists:', exc)
             app.config['HAS_REMAINING'] = False
 
-        # Ensure product.category_id exists for category mapping
+        # Ensure product.category_id exists for category mapping and new fields
         try:
             res = db.session.execute(text("PRAGMA table_info(product)")).fetchall()
             pcols = [r[1] for r in res]
@@ -116,6 +117,9 @@ def create_app(test_config=None):
                 db.session.commit()
             if 'unit' not in pcols:
                 db.session.execute(text("ALTER TABLE product ADD COLUMN unit VARCHAR(30)"))
+                db.session.commit()
+            if 'code' not in pcols:
+                db.session.execute(text("ALTER TABLE product ADD COLUMN code VARCHAR(20)"))
                 db.session.commit()
         except Exception as exc:
             print('Warning: could not ensure product.category_id column exists:', exc)
@@ -248,7 +252,24 @@ def create_app(test_config=None):
                 flash('Product name is required.')
                 return redirect(url_for('add_product'))
 
-            p = Product(name=name, category=category, category_id=category_id, unit=unit, quantity=quantity, price=price, reorder_level=reorder_level)
+            # Auto-generate product code like P01, P02, ... using max existing numeric suffix
+            existing_codes = [row[0] for row in db.session.query(Product.code).filter(Product.code.isnot(None)).all()]
+            numeric_vals = []
+            for c in existing_codes:
+                try:
+                    if c and c.startswith('P') and c[1:].isdigit():
+                        numeric_vals.append(int(c[1:]))
+                except Exception:
+                    continue
+            next_num = (max(numeric_vals) + 1) if numeric_vals else 1
+            # Format: P01..P09, then P10, P11, ...
+            code_val = f"P{next_num:02d}" if next_num < 100 else f"P{next_num}"
+            # Ensure uniqueness in unlikely collision
+            while db.session.query(Product.id).filter_by(code=code_val).first() is not None:
+                next_num += 1
+                code_val = f"P{next_num:02d}" if next_num < 100 else f"P{next_num}"
+
+            p = Product(code=code_val, name=name, category=category, category_id=category_id, unit=unit, quantity=quantity, price=price, reorder_level=reorder_level)
             db.session.add(p)
             db.session.commit()
             flash('Product added.')

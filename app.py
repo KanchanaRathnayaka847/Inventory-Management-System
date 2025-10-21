@@ -177,7 +177,6 @@ def create_app(test_config=None):
             if user and user.check_password(password):
                 session.clear()
                 session['user_id'] = user.id
-                flash('Logged in successfully.')
                 return redirect(url_for('home'))
             flash('Invalid username or password.')
             return redirect(url_for('login'))

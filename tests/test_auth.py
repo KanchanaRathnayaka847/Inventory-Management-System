@@ -28,7 +28,7 @@ def test_signup_and_login(client):
 
     # Login with correct credentials
     resp = client.post('/login', data={'username': 'alice', 'password': 'wonderland'}, follow_redirects=True)
-    assert b'Logged in successfully' in resp.data
+    assert b'ABC Company' in resp.data
 
     # Logout
     resp = client.get('/logout', follow_redirects=True)

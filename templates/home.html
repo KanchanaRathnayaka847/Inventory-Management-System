@@ -4,19 +4,6 @@
 
 {% block content %}
   <h1>ABC Company</h1>
-  <p>Total products: {{ total_products }}</p>
-  <p>Total stock value (FIFO): {{ '%.2f'|format(total_value) }}</p>
-  <div class="card">
-    <h1>Inventory System Home Page</h1>
-    {% if current_user %}
-      <p>Welcome back, {{ current_user.username }}!</p>
-    {% else %}
-      <p><a class="button" href="{{ url_for('login') }}">Login</a> or <a class="button btn-ghost" href="{{ url_for('signup') }}">Sign up</a></p>
-    {% endif %}
-    <hr />
-    <p>Total products: <strong>{{ total_products }}</strong></p>
-    <p>Total stock value (FIFO): <strong>{{ '%.2f'|format(total_value) }}</strong></p>
-  </div>
   <div class="card">
     <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
       <h2 style="margin:0;">Products</h2>

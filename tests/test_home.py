@@ -18,6 +18,6 @@ def test_homepage(client):
 
     rv = client.get('/')
     assert rv.status_code == 200
-    assert b'Inventory System Home Page' in rv.data
+    assert b'ABC Company' in rv.data
 
 

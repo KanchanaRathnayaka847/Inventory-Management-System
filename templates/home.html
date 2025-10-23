@@ -1,47 +1,88 @@
+<!-- 
+  HOME DASHBOARD TEMPLATE
+  This is the main dashboard page shown after user authentication.
+  Features:
+  - Company branding (ABC Company)
+  - Real-time product inventory table with search functionality
+  - Visual status indicators (row coloring and badges)
+  - Responsive design with overflow handling
+-->
 {% extends 'base.html' %}
 
 {% block title %}Home - Inventory System{% endblock %}
 
 {% block content %}
+  <!-- ==================== COMPANY BRANDING ==================== -->
   <h1>ABC Company</h1>
+  
+  <!-- ==================== PRODUCT INVENTORY DASHBOARD ==================== -->
   <div class="card">
+    <!-- Dashboard header with search functionality -->
     <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
       <h2 style="margin:0;">Products</h2>
+      <!-- Real-time search input for filtering products -->
       <input id="productSearch" type="text" placeholder="Search products..." style="max-width:260px;" />
     </div>
+    
+    <!-- Scrollable table container for large inventories -->
     <div style="overflow:auto; margin-top:12px;">
       <table id="productsTable" style="width:100%;">
         <thead>
           <tr>
-            <th>Product ID</th>
-            <th>Name</th>
-            <th>Category</th>
-            <th>Unit</th>
-            <th>Reorder Level</th>
-            <th>Available Qty</th>
-            <th>Status</th>
+            <!-- Column headers for product information -->
+            <th>Product ID</th>      <!-- Auto-generated code (P01, P02, etc.) -->
+            <th>Name</th>            <!-- Product name from master data -->
+            <th>Category</th>        <!-- Product category for organization -->
+            <th>Unit</th>            <!-- Unit of measurement (kg, pcs, liters, etc.) -->
+            <th>Reorder Level</th>   <!-- Minimum stock threshold -->
+            <th>Available Qty</th>   <!-- Current inventory quantity -->
+            <th>Status</th>          <!-- Visual status indicator -->
           </tr>
         </thead>
         <tbody>
+          <!-- *** PRODUCT INVENTORY ROWS WITH CONDITIONAL STYLING *** -->
           {% for p in products %}
+            <!-- 
+              Row background color logic:
+              - Green (row-ok): Stock level is above reorder level
+              - Light red (row-low): Stock level is below reorder level but not zero
+              - Default: For zero reorder level or other conditions
+            -->
             <tr class="{% if (p.quantity or 0) > (p.reorder_level or 0) %}row-ok{% elif (p.reorder_level or 0) > 0 and (p.quantity or 0) < (p.reorder_level or 0) %}row-low{% endif %}">
+              <!-- Product ID: Auto-generated code or fallback to P + ID -->
               <td>{{ p.code or ('P' ~ p.id) }}</td>
+              
+              <!-- Product Name -->
               <td>{{ p.name }}</td>
+              
+              <!-- Category: Use normalized category name if available, otherwise legacy text field -->
               <td>{{ p.category_rel.name if p.category_rel else p.category }}</td>
+              
+              <!-- Unit of measurement with default fallback -->
               <td>{{ p.unit or 'pcs' }}</td>
+              
+              <!-- Reorder level threshold -->
               <td>{{ p.reorder_level or 0 }}</td>
+              
+              <!-- Current available quantity -->
               <td>{{ p.quantity }}</td>
+              
+              <!-- *** STATUS BADGE LOGIC *** -->
               <td>
                 {% if (p.quantity or 0) == 0 %}
+                  <!-- Critical: Out of stock (red badge) -->
                   <span class="badge badge-danger">Out of stock</span>
                 {% elif (p.reorder_level or 0) > 0 and (p.quantity or 0) < (p.reorder_level or 0) %}
+                  <!-- Warning: Below reorder level (yellow/orange badge) -->
                   <span class="badge badge-warning">Below the reorder level</span>
                 {% else %}
+                  <!-- OK: Stock level is adequate (no badge needed) -->
                   
                 {% endif %}
               </td>
             </tr>
           {% else %}
+            <!-- Empty state: No products in inventory -->
             <tr><td colspan="7" style="text-align:center; color:#666;">No products yet.</td></tr>
           {% endfor %}
         </tbody>
@@ -49,17 +90,30 @@
     </div>
   </div>
 
+  <!-- ==================== CLIENT-SIDE SEARCH FUNCTIONALITY ==================== -->
   <script>
+    /**
+     * Real-time product search functionality
+     * Filters table rows based on user input without server requests
+     * Searches across all visible text content in each row
+     */
     (function(){
       const input = document.getElementById('productSearch');
       const table = document.getElementById('productsTable');
+      
+      // Ensure elements exist before attaching event listeners
       if(!input || !table) return;
+      
+      // Attach input event listener for real-time filtering
       input.addEventListener('input', function(){
-        const q = this.value.trim().toLowerCase();
-        const rows = table.querySelectorAll('tbody tr');
+        const query = this.value.trim().toLowerCase();  // Get search query
+        const rows = table.querySelectorAll('tbody tr'); // Get all data rows
+        
+        // Filter each row based on text content match
         rows.forEach(row => {
-          const text = row.innerText.toLowerCase();
-          row.style.display = text.includes(q) ? '' : 'none';
+          const rowText = row.innerText.toLowerCase();  // Get all text in row
+          // Show row if query matches any text, hide otherwise
+          row.style.display = rowText.includes(query) ? '' : 'none';
         });
       });
     })();

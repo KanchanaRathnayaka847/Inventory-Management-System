@@ -1,57 +1,194 @@
+<!-- 
+  BASE TEMPLATE FOR INVENTORY MANAGEMENT SYSTEM
+  This template provides the layout foundation for all pages in the application.
+  Features:
+  - Fixed header with app title and user info
+  - Left sidebar navigation (hidden until user is authenticated)
+  - Responsive main content area
+  - Consistent styling with CSS custom properties (theming)
+  - Flash message display system
+-->
 <!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Dynamic page title with fallback -->
     <title>{% block title %}Inventory System{% endblock %}</title>
+    
     <style>
+      /* ==================== CSS CUSTOM PROPERTIES (THEMING) ==================== */
+      /* Green color scheme for inventory/business application */
       :root{
-        --green-900: #0b3d2e;
-        --green-700: #116a4b;
-        --green-500: #1ea376;
-        --green-300: #7fd6b1;
-        --muted: #f6f9f6;
-        --text: #08321f;
+        --green-900: #0b3d2e;  /* Darkest green for primary elements */
+        --green-700: #116a4b;  /* Medium dark green for headers */
+        --green-500: #1ea376;  /* Primary green for accents */
+        --green-300: #7fd6b1;  /* Light green for highlights */
+        --muted: #f6f9f6;      /* Very light green background */
+        --text: #08321f;       /* Dark green text for readability */
       }
 
-  *{ box-sizing: border-box; }
-  body { font-family: 'Segoe UI', Roboto, Arial, sans-serif; margin: 0; padding: 0; color: var(--text); background: #ffffff; }
-  /* Header at top with small height; welcome placed to the right */
-  header { background: linear-gradient(90deg, var(--green-700), var(--green-500)); color: white; position: fixed; top:0; left:0; right:0; height:60px; display:flex; align-items:center; padding: 0 20px; z-index:40; }
-  header h1{ font-size: 18px; margin:0; font-weight:600; }
-  header .header-right{ margin-left:auto; display:flex; align-items:center; gap:12px; }
-  /* Left sidebar navigation */
-  .layout{ display:flex; min-height:100vh; }
-  aside.sidebar{ width:220px; background: linear-gradient(180deg, var(--green-900), var(--green-700)); color: white; padding: 80px 12px 20px 12px; position: fixed; top:60px; bottom:0; left:0; overflow:auto; }
-  aside.sidebar nav { display:flex; flex-direction:column; gap:6px; }
-  aside.sidebar a { color: white; padding:10px 12px; text-decoration:none; border-radius:8px; display:block; }
-  aside.sidebar a:hover{ background: rgba(255,255,255,0.06); }
-  main { padding: 28px; margin-left:240px; padding-top:92px; max-width: 1100px; }
-      .card{ background: var(--muted); border-radius:10px; padding:16px; box-shadow: 0 2px 6px rgba(11,61,46,0.06); }
+      /* ==================== GLOBAL STYLES ==================== */
+      *{ box-sizing: border-box; }  /* Consistent box model */
+      body { 
+        font-family: 'Segoe UI', Roboto, Arial, sans-serif; 
+        margin: 0; 
+        padding: 0; 
+        color: var(--text); 
+        background: #ffffff; 
+      }
+      
+      /* ==================== HEADER LAYOUT ==================== */
+      /* Fixed header at top with gradient background and user info */
+      header { 
+        background: linear-gradient(90deg, var(--green-700), var(--green-500)); 
+        color: white; 
+        position: fixed; 
+        top:0; left:0; right:0; 
+        height:60px; 
+        display:flex; 
+        align-items:center; 
+        padding: 0 20px; 
+        z-index:40;  /* Above sidebar */
+      }
+      header h1{ font-size: 18px; margin:0; font-weight:600; }
+      /* User welcome and logout positioned on right side of header */
+      header .header-right{ margin-left:auto; display:flex; align-items:center; gap:12px; }
+      
+      /* ==================== SIDEBAR NAVIGATION ==================== */
+      .layout{ display:flex; min-height:100vh; }
+      /* Fixed left sidebar with navigation links (hidden until authenticated) */
+      aside.sidebar{ 
+        width:220px; 
+        background: linear-gradient(180deg, var(--green-900), var(--green-700)); 
+        color: white; 
+        padding: 80px 12px 20px 12px;  /* Top padding accounts for fixed header */
+        position: fixed; 
+        top:60px; bottom:0; left:0; 
+        overflow:auto; 
+      }
+      aside.sidebar nav { display:flex; flex-direction:column; gap:6px; }
+      aside.sidebar a { 
+        color: white; 
+        padding:10px 12px; 
+        text-decoration:none; 
+        border-radius:8px; 
+        display:block; 
+      }
+      aside.sidebar a:hover{ background: rgba(255,255,255,0.06); }  /* Subtle hover effect */
+      
+      /* ==================== MAIN CONTENT AREA ==================== */
+      /* Main content with left margin to account for sidebar */
+      main { 
+        padding: 28px; 
+        margin-left:240px;  /* Space for sidebar */
+        padding-top:92px;   /* Space for fixed header */
+        max-width: 1100px; 
+      }
+      
+      /* ==================== UI COMPONENTS ==================== */
+      /* Card containers for content sections */
+      .card{ 
+        background: var(--muted); 
+        border-radius:10px; 
+        padding:16px; 
+        box-shadow: 0 2px 6px rgba(11,61,46,0.06); 
+      }
+      
+      /* Toolbar for action buttons */
       .toolbar{ display:flex; gap:12px; align-items:center; margin-bottom:12px; }
-      a.button, button.button{ background: var(--green-700); color: white; padding:8px 12px; border:none; border-radius:8px; text-decoration:none; cursor:pointer; }
-      .btn-ghost{ background:transparent; border:1px solid rgba(11,61,46,0.08); color:var(--green-900); }
-      form input[type=text], form input[type=password], form input[type=number], form input[type=float], form select{ padding:8px 10px; border-radius:6px; border:1px solid #d6e9e1; width:100%; max-width:360px; }
+      
+      /* Button styles */
+      a.button, button.button{ 
+        background: var(--green-700); 
+        color: white; 
+        padding:8px 12px; 
+        border:none; 
+        border-radius:8px; 
+        text-decoration:none; 
+        cursor:pointer; 
+      }
+      .btn-ghost{ 
+        background:transparent; 
+        border:1px solid rgba(11,61,46,0.08); 
+        color:var(--green-900); 
+      }
+      
+      /* Form input styles */
+      form input[type=text], form input[type=password], form input[type=number], form input[type=float], form select{ 
+        padding:8px 10px; 
+        border-radius:6px; 
+        border:1px solid #d6e9e1; 
+        width:100%; 
+        max-width:360px; 
+      }
+      
+      /* Table styles for data display */
       table{ width:100%; border-collapse:collapse; margin-top:10px; }
-      table thead th{ text-align:left; padding:8px; background: #f0faf4; border-bottom:2px solid rgba(11,61,46,0.06); }
-      table tbody td{ padding:10px; border-bottom:1px solid rgba(11,61,46,0.04); }
-      footer { background: var(--muted); padding: 12px 20px; text-align: center; border-top:1px solid rgba(11,61,46,0.04); margin-top: 40px; }
+      table thead th{ 
+        text-align:left; 
+        padding:8px; 
+        background: #f0faf4; 
+        border-bottom:2px solid rgba(11,61,46,0.06); 
+      }
+      table tbody td{ 
+        padding:10px; 
+        border-bottom:1px solid rgba(11,61,46,0.04); 
+      }
+      
+      /* Footer styling */
+      footer { 
+        background: var(--muted); 
+        padding: 12px 20px; 
+        text-align: center; 
+        border-top:1px solid rgba(11,61,46,0.04); 
+        margin-top: 40px; 
+      }
 
-      .warning { color: #8b1e1e; background: #fff2f2; padding:6px 8px; border-radius:6px; display:inline-block; }
-      .reorder { color: #ff3b30; font-weight:600; }
-  .row-low { background: #ffeaea; }
-  .row-ok { background: #e9fff2; }
+      /* ==================== STATUS AND ALERT STYLES ==================== */
+      /* Warning messages and alerts */
+      .warning { 
+        color: #8b1e1e; 
+        background: #fff2f2; 
+        padding:6px 8px; 
+        border-radius:6px; 
+        display:inline-block; 
+      }
+      .reorder { color: #ff3b30; font-weight:600; }  /* Reorder level warnings */
+      
+      /* Row background colors for status indication */
+      .row-low { background: #ffeaea; }   /* Light red for low stock */
+      .row-ok { background: #e9fff2; }    /* Light green for adequate stock */
 
-  /* Small status badges */
-  .badge{ display:inline-block; padding:3px 8px; font-size:12px; border-radius:999px; line-height:1; border:1px solid transparent; }
-  .badge-warning{ background:#ffe5e5; color:#b00020; border-color:#ffc7c7; }
-  .badge-danger{ background:#ff3b30; color:#ffffff; border-color:#e2382f; }
-  .text-success{ color:#1ea376; }
-  .text-danger{ color:#b00020; }
+      /* Status badges for inventory conditions */
+      .badge{ 
+        display:inline-block; 
+        padding:3px 8px; 
+        font-size:12px; 
+        border-radius:999px; 
+        line-height:1; 
+        border:1px solid transparent; 
+      }
+      .badge-warning{ background:#ffe5e5; color:#b00020; border-color:#ffc7c7; }  /* Below reorder level */
+      .badge-danger{ background:#ff3b30; color:#ffffff; border-color:#e2382f; }   /* Out of stock */
+      
+      /* Text color utilities */
+      .text-success{ color:#1ea376; }
+      .text-danger{ color:#b00020; }
 
-  /* Centering helper for forms or content blocks */
-  .center-wrap{ min-height: calc(100vh - 120px); display:flex; align-items:center; justify-content:center; }
-  @media (max-width: 768px){ .center-wrap{ min-height: auto; display:block; } }
+      /* ==================== UTILITY CLASSES ==================== */
+      /* Centering helper for forms or content blocks (used on login page) */
+      .center-wrap{ 
+        min-height: calc(100vh - 120px); 
+        display:flex; 
+        align-items:center; 
+        justify-content:center; 
+      }
+      
+      /* ==================== RESPONSIVE DESIGN ==================== */
+      @media (max-width: 768px){ 
+        .center-wrap{ min-height: auto; display:block; } 
+      }
 
       @media (max-width:700px){
         header .container{ flex-direction:column; align-items:flex-start; gap:8px; }
@@ -60,48 +197,67 @@
     </style>
   </head>
   <body>
+    <!-- ==================== FIXED HEADER ==================== -->
+    <!-- Header contains app title and authentication status/controls -->
     <header>
-  <h1>{% block header_title %}Inventory System{% endblock %}</h1>
+      <!-- Dynamic header title (can be overridden by child templates) -->
+      <h1>{% block header_title %}Inventory System{% endblock %}</h1>
+      
+      <!-- Right side of header: user info and auth links -->
       <div class="header-right">
         {% if current_user %}
+          <!-- Authenticated user: show username and logout link -->
           <span>Welcome, {{ current_user.username }}</span>
           <a href="{{ url_for('logout') }}" style="color:rgba(255,255,255,0.95); text-decoration:none;">Logout</a>
         {% else %}
+          <!-- Unauthenticated user: show login and signup links -->
           <a href="{{ url_for('login') }}" style="color:rgba(255,255,255,0.95); text-decoration:none;">Login</a>
           <a href="{{ url_for('signup') }}" style="color:rgba(255,255,255,0.95); text-decoration:none;">Sign up</a>
         {% endif %}
       </div>
     </header>
 
+    <!-- ==================== MAIN LAYOUT CONTAINER ==================== -->
     <div class="layout">
+      <!-- *** CONDITIONAL SIDEBAR DISPLAY *** -->
+      <!-- Sidebar is only shown when user is authenticated -->
       {% if current_user %}
         <aside class="sidebar">
           <nav>
+            <!-- Main navigation links for authenticated users -->
             <a href="{{ url_for('home') }}">Home</a>
             <a href="{{ url_for('purchases') }}">Purchases</a>
             <a href="{{ url_for('sales') }}">Sales</a>
             <a href="{{ url_for('master_data') }}">Master Data Management</a>
             <a href="{{ url_for('reports') }}">Reports &amp; Dashboard</a>
+            <!-- Note: Products link is intentionally hidden (admin-only access via direct URL) -->
           </nav>
         </aside>
       {% endif %}
 
-  <main {% if not current_user %}style="margin-left:0;padding-top:92px;"{% endif %}>
-      {% with messages = get_flashed_messages() %}
-        {% if messages %}
-          <ul>
-          {% for m in messages %}
-            <li>{{ m }}</li>
-          {% endfor %}
-          </ul>
-        {% endif %}
-      {% endwith %}
+      <!-- ==================== MAIN CONTENT AREA ==================== -->
+      <!-- Main content area adjusts margins based on authentication status -->
+      <main {% if not current_user %}style="margin-left:0;padding-top:92px;"{% endif %}>
+        <!-- *** FLASH MESSAGE SYSTEM *** -->
+        <!-- Display system messages (success, error, info) to the user -->
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            <ul>
+            {% for m in messages %}
+              <li>{{ m }}</li>
+            {% endfor %}
+            </ul>
+          {% endif %}
+        {% endwith %}
 
-      {% block content %}{% endblock %}
+        <!-- *** CHILD TEMPLATE CONTENT INJECTION POINT *** -->
+        <!-- This is where individual page content gets inserted -->
+        {% block content %}{% endblock %}
       </main>
-
     </div>
 
+    <!-- ==================== FOOTER ==================== -->
+    <!-- Simple footer with copyright, positioned to account for sidebar -->
     <footer style="margin-left:240px; padding-top:10px;">
       <small>&copy; 2025</small>
     </footer>
